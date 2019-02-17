@@ -15,11 +15,11 @@
 ~$ ./Anaconda3-5.2.0-Linux-x86_64.sh
 
 # 가상환경 생성
-~$ anaconda3/bin/conda create -n elasticsearch_control python=3.5 anaconda
+~$ anaconda3/bin/conda create -n sample python=3.5 anaconda
 
 # 디렉토리 이동
-~$ cd anaconda3/envs/elasticsearch_control
+~$ cd anaconda3/envs/sample
 
 # source 디렉토리 생성
-elasticsearch_control$ mkdir script
+sample$ mkdir script
 ```
