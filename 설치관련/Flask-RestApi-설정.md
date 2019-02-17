@@ -69,7 +69,7 @@ import pycurl
 app = Flask(__name__)
 api = Api(app)
 
-# 상세 내용은 소스 파일을 확인 할 것!! 
+# 소스 내용은 생략
  
 if __name__ == '__main__':
     app.run()
