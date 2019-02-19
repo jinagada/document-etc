@@ -9,6 +9,7 @@
   - [사용자 정의사전과 동의어 사전 테스트](#user-content-사용자-정의사전과-동의어-사전-테스트)
     - [decompound_mode 가 mixed 인경우](#user-content-decompound_mode-가-mixed-인경우)
     - [decompound_mode 가 discard 인경우](#user-content-decompound_mode-가-discard-인경우)
+  - [NGram 테스트](#user-content-ngram-테스트)
 - [참고](#user-content-참고)
 
 # Nori 형태소 분석기 설정
@@ -113,6 +114,14 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
               "custom_synonym_filter" <== 동의어 필터
             ],
             "tokenizer": "nori_user_dict" <== 아래 tokenizer에 설정된 tokenizer
+          },
+          "edgeNGram": { <== edge ngram 분석기 추가
+            "filter": [
+              "lowercase", <== 영어는 전부 소문자로 분석
+              "trim", <== 문자의 앞뒤 공백제거
+              "custom_synonym_filter" <== 동의어 필터
+            ],
+            "tokenizer": "edge_ngram_tokenizer"
           }
         },
         "tokenizer": {
@@ -120,6 +129,12 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             "decompound_mode": "mixed", <== Elasticsearch 메뉴얼에서 제공된 내용 : mixed 단어를 분석 및 분해한 후 원 단어도 포함(예: 가곡역 => 가곡역, 가곡, 역)
             "type": "nori_tokenizer", <== 고정값
             "user_dictionary": "userdic_ko.txt" <== 사용자 정의 사전 위치 : <Elasticsearch Installed Directory>/config/userdic_ko.txt
+          },
+          "edge_ngram_tokenizer": { <== Edge NGram 설정
+            "type": "edge_ngram",
+            "min_gram": 1,
+            "max_gram": 50, <== 영문을 위해 50자로 설정
+            "token_chars": [ "letter", "digit" ] <== 글자, 숫자만 적용(기호는 제외)
           }
         },
         "filter": {
@@ -174,6 +189,10 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             "keyword": {
               "type": "keyword",
               "ignore_above": 256
+            },
+            "ngram_txt": { <== NGram 필드 추가
+              "type": "text",
+              "analyzer": "edgeNGram"
             }
           }
         },
@@ -237,6 +256,14 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
               "custom_synonym_filter"
             ],
             "tokenizer": "nori_user_dict"
+          },
+          "edgeNGram": {
+            "filter": [
+              "lowercase",
+              "trim",
+              "custom_synonym_filter"
+            ],
+            "tokenizer": "edge_ngram_tokenizer"
           }
         },
         "tokenizer": {
@@ -244,6 +271,12 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             "decompound_mode": "discard",
             "type": "nori_tokenizer",
             "user_dictionary": "userdic_ko.txt"
+          },
+          "edge_ngram_tokenizer": {
+            "type": "edge_ngram",
+            "min_gram": 1,
+            "max_gram": 50,
+            "token_chars": [ "letter", "digit" ]
           }
         },
         "filter": {
@@ -288,6 +321,10 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             "keyword": {
               "type": "keyword", <== 전자 메일 주소, 호스트 이름, 상태 코드, 우편 번호 또는 태그와 같은 구조화 된 콘텐츠를 인덱싱하는 필드입니다.
               "ignore_above": 256 <== keyword 에서 색인할 최대 문자열 수 256 문자까지만 색인에 사용(권장값)
+            },
+            "ngram_txt": { <== NGram 필드 추가
+              "type": "text",
+              "analyzer": "edgeNGram"
             }
           }
         },
@@ -298,6 +335,10 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             "keyword": {
               "type": "keyword",
               "ignore_above": 256
+            },
+            "ngram_txt": { <== NGram 필드 추가
+              "type": "text",
+              "analyzer": "edgeNGram"
             }
           }
         },
@@ -308,6 +349,10 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             "keyword": {
               "type": "keyword",
               "ignore_above": 256
+            },
+            "ngram_txt": { <== NGram 필드 추가
+              "type": "text",
+              "analyzer": "edgeNGram"
             }
           }
         },
@@ -370,6 +415,40 @@ curl -k -XDELETE 'http://elastic-01:9200/_template/search-nori-sample1_v1-templa
   플립러닝 플립 러닝
   ```
 
+## NGram 테스트
+- Kibana DevTools 에서 실행
+- 분석기 테스트
+```shell
+# Nori
+GET search-nori-sample1_v1/_analyze
+{
+  "analyzer": "korean",
+  "text": ["[테스트] Fundamental Sales Course FSC"]
+}
+
+# NGram
+GET search-nori-sample1_v1/_analyze
+{
+  "analyzer": "edgeNGram",
+  "text": ["[테스트] Fundamental Sales Course FSC"]
+}
+```
+
+- Elasticsearch SQL 테스트
+```shell
+# NGram
+POST _xpack/sql?format=txt
+{
+  "query": "SELECT goodsname_nm FROM \"search-nori-sample1_v1\" WHERE 1 = 1 AND MATCH('goodsname_nm.ngram_txt', '테스') ORDER BY SCORE() asc"
+}
+
+# Nori
+POST _xpack/sql?format=txt
+{
+  "query": "SELECT goodsname_nm FROM \"search-nori-sample1_v1\" WHERE 1 = 1 AND MATCH('goodsname_nm', '테스') ORDER BY SCORE() asc"
+}
+```
+
 # 참고
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-tokenizer.html
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-speech.html
@@ -377,3 +456,4 @@ curl -k -XDELETE 'http://elastic-01:9200/_template/search-nori-sample1_v1-templa
 - https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html
 - https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates.html
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-tokenizer.html
+- https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenizer.html
