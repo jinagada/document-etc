@@ -133,7 +133,7 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             "type": "edge_ngram",
             "min_gram": 1,
             "max_gram": 50, <== 영문을 위해 50자로 설정
-            "token_chars": [ "letter", "digit", "punctuation", "symbol" ] <== 글자, 숫자, (!, "), ($, &), 공백 제외
+            "token_chars": [ "letter", "digit", "punctuation", "symbol" ] <== 글자, 숫자, 기호($, &), 공백(whitespace, enter) 제외
           }
         },
         "filter": {
