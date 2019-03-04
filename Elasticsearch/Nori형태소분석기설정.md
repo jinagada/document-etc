@@ -133,7 +133,7 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             "type": "edge_ngram",
             "min_gram": 1,
             "max_gram": 50, <== 영문을 위해 50자로 설정
-            "token_chars": [ "letter", "digit" ] <== 글자, 숫자만 적용(기호는 제외)
+            "token_chars": [ "letter", "digit", "punctuation", "symbol" ] <== 글자, 숫자, (!, "), ($, &), 공백 제외
           }
         },
         "filter": {
@@ -274,7 +274,7 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             "type": "edge_ngram",
             "min_gram": 1,
             "max_gram": 50,
-            "token_chars": [ "letter", "digit" ]
+            "token_chars": [ "letter", "digit", "punctuation", "symbol" ]
           }
         },
         "filter": {
