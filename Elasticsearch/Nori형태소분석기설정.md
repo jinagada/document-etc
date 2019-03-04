@@ -453,12 +453,12 @@ POST _xpack/sql?format=txt
 ```
 
 - NGram 과 Edge NGram 테스트 결과
-단어의 입력 순서에 따라 조회된 결과는 NGram 방식 보다 Edge NGram 방식이 더 나은 결과를 보여줌
-“전문가 과”라고 검색 시
-  - NGram 은 “전문가”라는 단어가 있는 모든 데이터가 같이 조회됨
-  - Edge NGram 은 “전문가 과”라는 단어가 있는 데이터만 조회됨
-“token_chars” 설정 시 “whitespace” 가 포함되면 “term” 생성 시 전체 text에 대해 “term”이 생성되어 검색이 정상적으로 되지 않음
-NGram(Edge 포함) 분석기의 경우 “match_phrase”, “match_phrase_prefix” 조회의 결과가 거의 차이가 없음
+  - 단어의 입력 순서에 따라 조회된 결과는 NGram 방식 보다 Edge NGram 방식이 더 나은 결과를 보여줌
+  - “전문가 과”라고 검색 시
+    - NGram 은 “전문가”라는 단어가 있는 모든 데이터가 같이 조회됨
+    - Edge NGram 은 “전문가 과”라는 단어가 있는 데이터만 조회됨
+  - “token_chars” 설정 시 “whitespace” 가 포함되면 “term” 생성 시 전체 text에 대해 “term”이 생성되어 검색이 정상적으로 되지 않음
+  - NGram(Edge 포함) 분석기의 경우 “match_phrase”, “match_phrase_prefix” 조회의 결과가 거의 차이가 없음
 
 # 참고
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-tokenizer.html
