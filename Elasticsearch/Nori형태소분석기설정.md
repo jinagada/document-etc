@@ -115,12 +115,12 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             ],
             "tokenizer": "nori_user_dict" <== 아래 tokenizer에 설정된 tokenizer
           },
-          "edgeNGram": { <== edge ngram 분석기 추가
+          "customNGram": { <== edge ngram 분석기 추가
             "filter": [
               "lowercase", <== 영어는 전부 소문자로 분석
               "trim" <== 문자의 앞뒤 공백제거
             ],
-            "tokenizer": "edge_ngram_tokenizer"
+            "tokenizer": "custom_ngram_tokenizer"
           }
         },
         "tokenizer": {
@@ -129,7 +129,7 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             "type": "nori_tokenizer", <== 고정값
             "user_dictionary": "userdic_ko.txt" <== 사용자 정의 사전 위치 : <Elasticsearch Installed Directory>/config/userdic_ko.txt
           },
-          "edge_ngram_tokenizer": { <== Edge NGram 설정
+          "custom_ngram_tokenizer": { <== Edge NGram 설정
             "type": "edge_ngram",
             "min_gram": 1,
             "max_gram": 50, <== 영문을 위해 50자로 설정
@@ -191,7 +191,7 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
             },
             "ngram_txt": { <== NGram 필드 추가
               "type": "text",
-              "analyzer": "edgeNGram"
+              "analyzer": "customNGram"
             }
           }
         },
@@ -256,12 +256,12 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             ],
             "tokenizer": "nori_user_dict"
           },
-          "edgeNGram": {
+          "customNGram": {
             "filter": [
               "lowercase",
               "trim"
             ],
-            "tokenizer": "edge_ngram_tokenizer"
+            "tokenizer": "custom_ngram_tokenizer"
           }
         },
         "tokenizer": {
@@ -270,7 +270,7 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             "type": "nori_tokenizer",
             "user_dictionary": "userdic_ko.txt"
           },
-          "edge_ngram_tokenizer": {
+          "custom_ngram_tokenizer": {
             "type": "edge_ngram",
             "min_gram": 1,
             "max_gram": 50,
@@ -322,7 +322,7 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             },
             "ngram_txt": { <== NGram 필드 추가
               "type": "text",
-              "analyzer": "edgeNGram"
+              "analyzer": "customNGram"
             }
           }
         },
@@ -336,7 +336,7 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             },
             "ngram_txt": { <== NGram 필드 추가
               "type": "text",
-              "analyzer": "edgeNGram"
+              "analyzer": "customNGram"
             }
           }
         },
@@ -350,7 +350,7 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
             },
             "ngram_txt": { <== NGram 필드 추가
               "type": "text",
-              "analyzer": "edgeNGram"
+              "analyzer": "customNGram"
             }
           }
         },
@@ -424,10 +424,10 @@ GET search-nori-sample1_v1/_analyze
   "text": ["[테스트] Fundamental Sales Course FSC"]
 }
 
-# NGram
+# Edge NGram
 GET search-nori-sample1_v1/_analyze
 {
-  "analyzer": "edgeNGram",
+  "analyzer": "customNGram",
   "text": ["[테스트] Fundamental Sales Course FSC"]
 }
 ```
@@ -438,10 +438,8 @@ GET search-nori-sample1_v1/_analyze
 GET search-nori-sample1_v1/_search
 {
   "query": {
-    "prefix": {
-      "goodsname_nm.ngram_txt": {
-        "value": "테스"
-      }
+    "match_phrase": {
+      "goodsname_nm.ngram_txt": "테스"
     }
   },
   "_source": ["id", "process_nm"]
@@ -453,6 +451,14 @@ POST _xpack/sql?format=txt
   "query": "SELECT goodsname_nm FROM \"search-nori-sample1_v1\" WHERE 1 = 1 AND MATCH('goodsname_nm', '테스') ORDER BY SCORE() asc"
 }
 ```
+
+- NGram 과 Edge NGram 테스트 결과
+단어의 입력 순서에 따라 조회된 결과는 NGram 방식 보다 Edge NGram 방식이 더 나은 결과를 보여줌
+“전문가 과”라고 검색 시
+  - NGram 은 “전문가”라는 단어가 있는 모든 데이터가 같이 조회됨
+  - Edge NGram 은 “전문가 과”라는 단어가 있는 데이터만 조회됨
+“token_chars” 설정 시 “whitespace” 가 포함되면 “term” 생성 시 전체 text에 대해 “term”이 생성되어 검색이 정상적으로 되지 않음
+NGram(Edge 포함) 분석기의 경우 “match_phrase”, “match_phrase_prefix” 조회의 결과가 거의 차이가 없음
 
 # 참고
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-tokenizer.html
