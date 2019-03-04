@@ -118,8 +118,7 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
           "edgeNGram": { <== edge ngram 분석기 추가
             "filter": [
               "lowercase", <== 영어는 전부 소문자로 분석
-              "trim", <== 문자의 앞뒤 공백제거
-              "custom_synonym_filter" <== 동의어 필터
+              "trim" <== 문자의 앞뒤 공백제거
             ],
             "tokenizer": "edge_ngram_tokenizer"
           }
@@ -260,8 +259,7 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
           "edgeNGram": {
             "filter": [
               "lowercase",
-              "trim",
-              "custom_synonym_filter"
+              "trim"
             ],
             "tokenizer": "edge_ngram_tokenizer"
           }
@@ -437,9 +435,16 @@ GET search-nori-sample1_v1/_analyze
 - Elasticsearch SQL 테스트
 ```shell
 # NGram
-POST _xpack/sql?format=txt
+GET search-nori-sample1_v1/_search
 {
-  "query": "SELECT goodsname_nm FROM \"search-nori-sample1_v1\" WHERE 1 = 1 AND MATCH('goodsname_nm.ngram_txt', '테스') ORDER BY SCORE() asc"
+  "query": {
+    "prefix": {
+      "goodsname_nm.ngram_txt": {
+        "value": "테스"
+      }
+    }
+  },
+  "_source": ["id", "process_nm"]
 }
 
 # Nori
