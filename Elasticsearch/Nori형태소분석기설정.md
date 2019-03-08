@@ -3,6 +3,7 @@
   - [Nori Plugin 설치](#user-content-nori-plugin-설치)
   - [사용자정의 사전(userdic_ko.txt) 설정](#user-content-사용자정의-사전userdic_kotxt-설정)
   - [동의어 사전(synonym.txt) 설정](#user-content-동의어-사전synonymtxt-설정)
+  - [불용어 사전(stopwords.txt) 설정](#user-content-불용어-사전stopwordstxt-설정)
   - [Nori 형태소 분석기를 사용한 Index 생성 예제](#user-content-nori-형태소-분석기를-사용한-index-생성-예제)
   - [사용자정의 사전 내용 갱신 후 적용 방법](#user-content-사용자정의-사전-내용-갱신-후-적용-방법)
   - [Nori 형태소 분석기를 사용한 Template 생성 예제(Enroll List)](#user-content-nori-형태소-분석기를-사용한-template-생성-예제enroll-list)
@@ -10,6 +11,7 @@
     - [decompound_mode 가 mixed 인경우](#user-content-decompound_mode-가-mixed-인경우)
     - [decompound_mode 가 discard 인경우](#user-content-decompound_mode-가-discard-인경우)
   - [NGram 테스트](#user-content-ngram-테스트)
+  - [불용어 테스트](#user-content-불용어-테스트)
 - [참고](#user-content-참고)
 
 # Nori 형태소 분석기 설정
@@ -67,7 +69,7 @@ config$ iconv -f us-ascii -t UTF-8//TRANSLIT userdic_ko.txt -o userdic_ko.txt
 ```
 
 ## 동의어 사전(synonym.txt) 설정
-- 사용자정의 사전 파일은 모든 노드서버의 동일한 위치에 파일을 생성 하여야함!
+- 동의어 사전 파일은 모든 노드서버의 동일한 위치에 파일을 생성 하여야함!
 - synonym.txt 파일의 내용은 예제이며, 실제 서버에 설정 시 필요한 단어로만 설정 해야함
 ```shell
 # synonym.txt 파일 생성
@@ -76,7 +78,7 @@ config$ touch synonym.txt
 # file charset 확인
 config$ file -i synonym.txt
 -- 출력 내용 -----------------------------------------------------------------------------------
-userdic_ko.txt: inode/x-empty; charset=binary
+synonym.txt: inode/x-empty; charset=binary
 -- 출력 내용 -----------------------------------------------------------------------------------
  
 # vi 에디터로 열어 파일을 텍스트 파일로 변경
@@ -90,11 +92,41 @@ config$ vi synonym.txt
 # file charset 확인
 config$ file -i synonym.txt
 -- 출력 내용 -----------------------------------------------------------------------------------
-userdic_ko.txt: text/plain; charset=utf-8
+synonym.txt: text/plain; charset=utf-8
 -- 출력 내용 -----------------------------------------------------------------------------------
  
 # charset 부분이 UTF-8 이 아닌경우 UTF-8 로 변경
 config$ iconv -f us-ascii -t UTF-8//TRANSLIT synonym.txt -o synonym.txt
+```
+
+## 불용어 사전(stopwords.txt) 설정
+- 불용어 사전 파일은 모든 노드서버의 동일한 위치에 파일을 생성 하여야함!
+- stopwords.txt 파일의 내용은 예제이며, 실제 서버에 설정 시 필요한 단어로만 설정 해야함
+```shell
+# stopwords.txt 파일 생성
+config$ touch stopwords.txt
+ 
+# file charset 확인
+config$ file -i stopwords.txt
+-- 출력 내용 -----------------------------------------------------------------------------------
+stopwords.txt: inode/x-empty; charset=binary
+-- 출력 내용 -----------------------------------------------------------------------------------
+ 
+# vi 에디터로 열어 파일을 텍스트 파일로 변경
+config$ vi stopwords.txt
+-- 내용 수정 -----------------------------------------------------------------------------------
+양상민
+-- 내용 수정 -----------------------------------------------------------------------------------
+## :wq 로 변경 내용을 저장 후 나옴
+ 
+# file charset 확인
+config$ file -i stopwords.txt
+-- 출력 내용 -----------------------------------------------------------------------------------
+stopwords.txt: text/plain; charset=utf-8
+-- 출력 내용 -----------------------------------------------------------------------------------
+ 
+# charset 부분이 UTF-8 이 아닌경우 UTF-8 로 변경
+config$ iconv -f us-ascii -t UTF-8//TRANSLIT stopwords.txt -o stopwords.txt
 ```
 
 ## Nori 형태소 분석기를 사용한 Index 생성 예제
@@ -111,14 +143,16 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
               "npos_filter", <== 아래 filter에 설정된 분석 설정
               "nori_readingform", <== 한자를 한글로 변환하여 분석
               "lowercase", <== 영어는 전부 소문자로 분석
-              "custom_synonym_filter" <== 동의어 필터
+              "custom_synonym_filter", <== 동의어 필터
+              "custom_stopwords_filter" <== 불용어 필터
             ],
             "tokenizer": "nori_user_dict" <== 아래 tokenizer에 설정된 tokenizer
           },
           "customNGram": { <== edge ngram 분석기 추가
             "filter": [
               "lowercase", <== 영어는 전부 소문자로 분석
-              "trim" <== 문자의 앞뒤 공백제거
+              "trim", <== 문자의 앞뒤 공백제거
+              "custom_stopwords_filter" <== 불용어 필터
             ],
             "tokenizer": "custom_ngram_tokenizer"
           }
@@ -163,6 +197,10 @@ curl -k -XPUT 'http://elastic-01:9200/search-nori-sample1_v1' -H 'Content-Type: 
           "custom_synonym_filter": { <== 동의어 필터 추가
             "type": "synonym_graph", <== 동의어 필터 type
             "synonyms_path": "synonym.txt" <== 동의어 사전 위치 : <Elasticsearch Installed Directory>/config/synonym.txt
+          },
+          "custom_stopwords_filter": { <== 불용어 필터 추가
+            "type": "stop", <== 불용어 필터 type
+            "stopwords_path": "stopwords.txt" <== 불용어 사전 위치 : <Elasticsearch Installed Directory>/config/stopwords.txt
           }
         }
       }
@@ -252,14 +290,16 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
               "npos_filter",
               "nori_readingform",
               "lowercase",
-              "custom_synonym_filter"
+              "custom_synonym_filter",
+              "custom_stopwords_filter"
             ],
             "tokenizer": "nori_user_dict"
           },
           "customNGram": {
             "filter": [
               "lowercase",
-              "trim"
+              "trim",
+              "custom_stopwords_filter"
             ],
             "tokenizer": "custom_ngram_tokenizer"
           }
@@ -304,6 +344,10 @@ curl -k -XPUT 'http://elastic-01:9200/_template/search-nori-sample1_v1-template'
           "custom_synonym_filter": {
             "type": "synonym_graph",
             "synonyms_path": "synonym.txt"
+          },
+          "custom_stopwords_filter": {
+            "type": "stop",
+            "stopwords_path": "stopwords.txt"
           }
         }
       }
@@ -460,6 +504,40 @@ POST _xpack/sql?format=txt
   - “token_chars” 설정 시 “whitespace” 가 포함되면 “term” 생성 시 전체 text에 대해 “term”이 생성되어 검색이 정상적으로 되지 않음
   - NGram(Edge 포함) 분석기의 경우 “match_phrase”, “match_phrase_prefix” 조회의 결과가 거의 차이가 없음
 
+## 불용어 테스트
+- Kibana DevTools 에서 실행
+- 분석기 테스트
+```shell
+GET hunet-enroll-list-2162-2019-02-26-stopwords-1/_analyze
+{
+  "analyzer": "customNGram",
+  "text": ["아시아의 허브, 싱가포르 정복을 위한 양상민 과장의 사투기!"]
+}
+
+GET hunet-enroll-list-2162-2019-02-26-stopwords-1/_analyze
+{
+  "analyzer": "korean",
+  "text": ["아시아의 허브, 싱가포르 정복을 위한 양상민 과장의 사투기!"]
+}
+```
+
+- 불용어 등록 : stopwords.txt
+```shell
+양상민
+양
+양상
+```
+
+- “양상민” 만 등록한 경우
+  - korean 분석기에서는 해당 단어가 token 으로 분해되지 않음
+  - customNGram 분석기에서는 “양”, “양상” 의 단어가 token 으로 분해되고, “양상민”은 token 으로 분해되지 않음
+  - match 로 조회하는 경우 korean 분석기의 결과에서는 조회 되지 않으나, customNGram 분석기에서는 조회됨
+    - “양”, “양상” 의 단어가 term 으로 저장되어 있어 조회가 가능함
+- “양상민, 양, 양상” 으로 등록한 경우
+  - korean 분석기에서는 여전히 해당 단어가 token 으로 분해되지 않음
+  - customNGram 분석기에서는 “양”, “양상” 의 단어도 token 으로 분해되지 않음
+  - match 로 조회하는 경우 korean, customNGram 분석기 모두에서 조회 되지 않음
+
 # 참고
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-tokenizer.html
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-speech.html
@@ -468,3 +546,4 @@ POST _xpack/sql?format=txt
 - https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates.html
 - https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-nori-tokenizer.html
 - https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenizer.html
+- https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-stop-tokenfilter.html
