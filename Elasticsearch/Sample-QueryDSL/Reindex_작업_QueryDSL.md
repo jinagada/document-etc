@@ -1,5 +1,5 @@
 ```
-DELETE hunet-prime-goods-info-test-1
+DELETE sample-index-2016-1
 
 GET _tasks?detailed=true&actions=*reindex
 
